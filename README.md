@@ -14,6 +14,9 @@ and a linter.
 - **Color tokens with WCAG flags** — every swatch shows white/black text
   contrast ratios badged green (passes AA 4.5:1) or red (fails). Colors where
   neither black nor white text reaches AA are flagged **⚠ low contrast**.
+- **Inline color picker** — click any swatch to open a native color picker and
+  edit the token live; the change is written straight back into the `DESIGN.md`
+  source (preserving its quote style) and every preview re-renders.
 - **Contrast checker** — an interactive foreground/background checker plus an
   audit table of every component's text-on-background pair against WCAG AA.
 - **Linter** — findings from the official
@@ -28,9 +31,10 @@ and a linter.
 
 ## Screenshots
 
-### Colors — tokens with live WCAG contrast flags
+### Colors — tokens with live WCAG contrast flags & inline picker
 Each swatch badges white/black text contrast as pass (✓) or fail (✗); colors that
-fail against both are flagged low-contrast.
+fail against both are flagged low-contrast. Click a swatch (note the ✎ hint) to
+edit its value with a native color picker — the edit flows back into the source.
 
 ![Colors tab](docs/screenshots/colors.png)
 

@@ -205,10 +205,18 @@ function renderColors(d) {
             // Flag the token when neither white nor black text meets AA on it.
             if (!wPass && !bPass) swatchFlag = ' data-wcag="fail"';
         }
+        const hexForInput = c ? toHex(c) : "#000000";
+        const chip = c
+            ? `<label class="chip pickable" style="background:${esc(bg)};color:${txt}" title="Click to pick a new color for &ldquo;${esc(name)}&rdquo;">
+                <span>Aa</span><span class="chip-hex">${esc(hex)}</span>
+                <span class="pick-hint" aria-hidden="true">✎</span>
+                <input type="color" class="swatch-picker" data-token="${esc(name)}" value="${esc(hexForInput)}" aria-label="Pick a new color for ${esc(name)}">
+            </label>`
+            : `<div class="chip" style="background:${esc(bg)};color:${txt}">
+                <span>Aa</span><span class="chip-hex">${esc(hex)}</span>
+            </div>`;
         html += `<div class="swatch"${swatchFlag}>
-            <div class="chip" style="background:${esc(bg)};color:${txt}">
-                <span>Aa</span><span>${esc(hex)}</span>
-            </div>
+            ${chip}
             <div class="info">
                 <div class="tname">${esc(name)}${swatchFlag ? '<span class="wcag-warn" title="Neither black nor white text reaches WCAG AA (4.5:1) on this color">⚠ low contrast</span>' : ""}</div>
                 <div class="tval">${esc(val)}${c ? "" : " ⚠"}</div>
@@ -219,6 +227,94 @@ function renderColors(d) {
     html += "</div>";
     el.innerHTML = html;
 }
+
+// --- Color token editing (via the swatch color picker) -----------------------
+const reEsc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Surgically replace a single color token's value inside the front-matter
+// `colors:` block, preserving indentation and any existing quote style.
+function updateColorInSource(source, token, newHex) {
+    const nl = source.includes("\r\n") ? "\r\n" : "\n";
+    const lines = source.split(/\r?\n/);
+    if (!lines.length || lines[0].trim() !== "---") return source;
+    let fmEnd = -1;
+    for (let i = 1; i < lines.length; i++) {
+        if (lines[i].trim() === "---") { fmEnd = i; break; }
+    }
+    if (fmEnd === -1) return source;
+
+    let colorsIdx = -1, colorsIndent = 0;
+    for (let i = 1; i < fmEnd; i++) {
+        const m = lines[i].match(/^(\s*)colors\s*:\s*$/);
+        if (m) { colorsIdx = i; colorsIndent = m[1].length; break; }
+    }
+    if (colorsIdx === -1) return source;
+
+    const tokRe = new RegExp("^(\\s*)(" + reEsc(token) + ")\\s*:\\s*(.*)$");
+    for (let i = colorsIdx + 1; i < fmEnd; i++) {
+        const line = lines[i];
+        if (line.trim() === "") continue;
+        const indent = (line.match(/^(\s*)/)[1] || "").length;
+        if (indent <= colorsIndent) break; // left the colors block
+        const m = line.match(tokRe);
+        if (m && m[1].length > colorsIndent) {
+            const rawVal = m[3].trim();
+            const quote = rawVal.startsWith('"') ? '"' : rawVal.startsWith("'") ? "'" : "";
+            const value = quote ? quote + newHex + quote : newHex;
+            lines[i] = m[1] + m[2] + ": " + value;
+            return lines.join(nl);
+        }
+    }
+    return source;
+}
+
+function findPicker(token) {
+    return [...document.querySelectorAll("#panel-colors .swatch-picker")]
+        .find((i) => i.dataset.token === token) || null;
+}
+
+// Lightweight in-place preview while the picker is open (avoids re-rendering the
+// panel, which would tear down the live <input> the OS picker is bound to).
+function liveUpdateSwatch(token, hex) {
+    const inp = findPicker(token);
+    if (!inp) return;
+    const chip = inp.closest(".chip");
+    const swatch = inp.closest(".swatch");
+    const c = resolveColor(hex);
+    if (chip) {
+        chip.style.background = hex;
+        if (c) chip.style.color = bestTextColor(c);
+        const hx = chip.querySelector(".chip-hex");
+        if (hx) hx.textContent = hex.toLowerCase();
+    }
+    if (swatch) {
+        const tv = swatch.querySelector(".tval");
+        if (tv) tv.textContent = hex;
+    }
+}
+
+function applyColorEdit(token, hex, commit) {
+    const next = updateColorInSource(current, token, hex);
+    if (next !== current) {
+        current = next;
+        editor.value = current;
+        scheduleSave();
+    }
+    if (commit) render();       // full resync (badges, contrast, components)
+    else liveUpdateSwatch(token, hex);
+}
+
+(() => {
+    const panel = $("#panel-colors");
+    if (!panel) return;
+    const handler = (commit) => (e) => {
+        const inp = e.target.closest && e.target.closest(".swatch-picker");
+        if (!inp) return;
+        applyColorEdit(inp.dataset.token, String(inp.value).toUpperCase(), commit);
+    };
+    panel.addEventListener("input", handler(false));  // live while dragging
+    panel.addEventListener("change", handler(true));  // committed on close
+})();
 
 // --- Typography panel --------------------------------------------------------
 function renderTypography(d) {
