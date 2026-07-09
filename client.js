@@ -77,7 +77,7 @@ function scheduleSave() {
 
 editor.addEventListener("input", () => {
     current = editor.value;
-    render();
+    scheduleRender();
     scheduleSave();
 });
 
@@ -104,7 +104,43 @@ function loadFonts(design) {
 }
 
 // --- Render orchestrator -----------------------------------------------------
+// Rendering is split so a keystroke only rebuilds the *visible* tab. The other
+// panels are marked dirty and rebuilt lazily when the user switches to them.
+// Rapid edits (typing, picker drag) are coalesced into one render per animation
+// frame, so input never blocks on parsing + rebuilding seven panels.
 let parsed = null;
+let lastLintReport = null;
+let renderScheduled = false;
+const dirtyPanels = new Set();
+
+const PANEL_RENDERERS = {
+    colors: () => renderColors(parsed.design),
+    typography: () => renderTypography(parsed.design),
+    layout: () => renderLayout(parsed.design),
+    components: () => renderComponents(parsed.design),
+    contrast: () => renderContrast(parsed.design),
+    lint: () => renderLint(lastLintReport || { summary: parsed.summary, findings: parsed.findings, engine: "bundled" }),
+    prose: () => renderProse(parsed),
+};
+
+function activePanelName() {
+    const t = document.querySelector(".dm-tab.active");
+    return t && PANEL_RENDERERS[t.dataset.panel] ? t.dataset.panel : "colors";
+}
+
+function renderPanel(name) {
+    if (!parsed || !PANEL_RENDERERS[name]) return;
+    PANEL_RENDERERS[name]();
+    dirtyPanels.delete(name);
+}
+
+// Coalesce a burst of edits into a single render on the next frame.
+function scheduleRender() {
+    if (renderScheduled) return;
+    renderScheduled = true;
+    requestAnimationFrame(() => { renderScheduled = false; render(); });
+}
+
 function render() {
     parsed = parseDesignMd(current, domResolve);
     const d = parsed.design;
@@ -115,7 +151,7 @@ function render() {
     if (d.colors.primary) document.documentElement.style.setProperty("--primary", String(resolveColorStr(d.colors.primary)));
     if (d.colors.surface) document.documentElement.style.setProperty("--surface", String(resolveColorStr(d.colors.surface)));
 
-    // header
+    // header (cheap — always refresh)
     $("#ds-name").textContent = d.name || "Untitled design system";
     const metaBits = [];
     if (d.version) metaBits.push("v" + d.version);
@@ -124,15 +160,17 @@ function render() {
     metaBits.push(Object.keys(d.components).length + " components");
     $("#ds-meta").textContent = metaBits.join(" · ");
 
-    // instant lint from bundled parser, then upgrade to official linter async
+    // Lint badges sit on the tab strip, so refresh them every render. Start from
+    // the bundled parser, then upgrade to the official linter asynchronously.
+    lastLintReport = { summary: parsed.summary, findings: parsed.findings, engine: "bundled" };
     updateLintBadges(parsed.summary);
-    renderColors(d);
-    renderTypography(d);
-    renderLayout(d);
-    renderComponents(d);
-    renderContrast(d);
-    renderLint({ summary: parsed.summary, findings: parsed.findings, engine: "bundled" });
-    renderProse(parsed);
+
+    // Rebuild only the visible tab now; mark the rest dirty for lazy rebuild.
+    const active = activePanelName();
+    for (const name of Object.keys(PANEL_RENDERERS)) {
+        if (name === active) renderPanel(name);
+        else dirtyPanels.add(name);
+    }
     scheduleLintRefresh(current);
 }
 
@@ -155,8 +193,11 @@ function scheduleLintRefresh(content) {
             const report = await res.json();
             if (content !== current) return; // stale
             if (report && report.summary && Array.isArray(report.findings)) {
+                lastLintReport = report;
                 updateLintBadges(report.summary);
-                renderLint(report);
+                // Only touch the lint panel DOM if it's the one on screen.
+                if (activePanelName() === "lint") renderPanel("lint");
+                else dirtyPanels.add("lint");
             }
         } catch { /* keep bundled findings */ }
     }, 350);
@@ -619,6 +660,8 @@ document.querySelectorAll(".dm-tab").forEach((tab) => {
         document.querySelectorAll(".dm-panel").forEach((p) => p.classList.remove("active"));
         tab.classList.add("active");
         document.getElementById("panel-" + tab.dataset.panel).classList.add("active");
+        // Build the panel now if edits landed while it was hidden.
+        if (dirtyPanels.has(tab.dataset.panel)) renderPanel(tab.dataset.panel);
     });
 });
 
