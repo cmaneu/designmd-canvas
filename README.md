@@ -26,6 +26,32 @@ and a linter.
   non-destructive — they persist to the canvas's own artifact, never written
   back to the repo file.
 
+## Screenshots
+
+### Colors — tokens with live WCAG contrast flags
+Each swatch badges white/black text contrast as pass (✓) or fail (✗); colors that
+fail against both are flagged low-contrast.
+
+![Colors tab](docs/screenshots/colors.png)
+
+### Typography — type scale
+![Typography tab](docs/screenshots/typography.png)
+
+### Layout — spacing & corner radius tokens
+![Layout tab](docs/screenshots/layout.png)
+
+### Components — rendered previews
+![Components tab](docs/screenshots/components.png)
+
+### Contrast — interactive checker & component audit
+![Contrast tab](docs/screenshots/contrast.png)
+
+### Lint — findings from the design.md linter
+![Lint tab](docs/screenshots/lint.png)
+
+### Prose — narrative sections
+![Prose tab](docs/screenshots/prose.png)
+
 ## Install
 
 ### From this repo (recommended)
