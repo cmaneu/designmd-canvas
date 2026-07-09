@@ -411,3 +411,84 @@ body.editor-collapsed .expand-rail { display: flex; }
 .prose ul { margin: 6px 0; padding-left: 20px; }
 .prose code { font-family: var(--font-mono, monospace); background: var(--background-color-muted,#f6f8fa); padding: 1px 4px; border-radius: 4px; font-size: 12px; }
 .prose strong { font-weight: 700; }
+
+/* ------------------------------------------------------------------ *
+ * Responsive layout — adapt to narrow canvas panels (small laptops,
+ * thin side panels). Breakpoints track the iframe/panel width, which
+ * equals the width the host gives the canvas, not the physical display.
+ * ------------------------------------------------------------------ */
+
+/* Medium: keep the two-column layout, just tighten it. */
+@media (max-width: 820px) {
+    .dm-editor-pane { width: 36%; min-width: 200px; }
+    .dm-scroll { padding: 14px; }
+    .swatch-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+    .comp-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+}
+
+/* Narrow: stack the source pane above the preview instead of beside it. */
+@media (max-width: 560px) {
+    .dm-body { flex-direction: column; }
+    .dm-editor-pane {
+        width: auto;
+        max-width: none;
+        min-width: 0;
+        height: 34vh;
+        min-height: 130px;
+        border-right: 0;
+        border-bottom: 1px solid var(--border-color-default, #d0d7de);
+    }
+    /* Collapsed rail becomes a top bar rather than a vertical spine. */
+    .expand-rail {
+        writing-mode: horizontal-tb;
+        flex-direction: row;
+        width: auto;
+        padding: 8px 10px;
+        border-right: 0;
+        border-bottom: 1px solid var(--border-color-default, #d0d7de);
+    }
+    .expand-rail .rail-label { letter-spacing: 0.06em; }
+    .dm-scroll { padding: 12px; }
+    .swatch .chip { height: 62px; }
+    .swatch-grid { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; }
+    .comp-grid { grid-template-columns: 1fr; }
+    .cc-preview { padding: 18px; }
+    .cc-preview .big { font-size: 22px; }
+    .cc-ratio { font-size: 28px; }
+}
+
+/* Very narrow (~3–4 inch panel): shrink everything to stay usable. */
+@media (max-width: 380px) {
+    .dm-header { padding: 8px 10px; gap: 8px; }
+    .dm-title .name { font-size: 14px; }
+    .dm-tab { padding: 6px 8px; font-size: 12px; }
+    .dm-scroll { padding: 10px; }
+    .section-title:not(:first-child) { margin-top: 20px; }
+
+    .swatch-grid { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+    .swatch .chip { height: 56px; padding: 6px; }
+    .swatch .info { padding: 7px 8px; }
+    .swatch .info .tname { font-size: 12px; }
+    .swatch .contrast-row { flex-wrap: wrap; }
+
+    .scale-row .lbl { width: 62px; font-size: 11px; }
+    .radius-grid { gap: 12px; }
+    .radius-box { width: 60px; height: 60px; }
+
+    .cc-controls { gap: 12px; }
+    .cc-field { min-width: 0; flex: 1 1 130px; }
+    .cc-field select { max-width: 100%; }
+    .cc-preview { padding: 14px; }
+    .cc-preview .big { font-size: 19px; }
+    .cc-preview .small { font-size: 13px; }
+    .cc-ratio { font-size: 24px; }
+    .wcag-badge { min-width: 68px; padding: 7px 10px; }
+    .wcag-badge .v { font-size: 13px; }
+
+    .audit-table { font-size: 11px; }
+    .audit-table th, .audit-table td { padding: 5px 6px; }
+
+    .lint-summary { gap: 8px; }
+    .lint-pill { padding: 6px 10px; }
+    .lint-pill .n { font-size: 18px; }
+}
