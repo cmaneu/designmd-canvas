@@ -1,0 +1,12 @@
+# Third-party deps — the extension ships with a zero-dependency bundled linter,
+# so this is optional. Run `npm install` to enable the official @google/design.md
+# linter engine locally.
+node_modules/
+
+# Per-user runtime state written by the canvas (one file per open instance).
+artifacts/
+
+# Logs / OS cruft
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,25 @@
+{
+  "name": "designmd-canvas",
+  "version": "1.0.0",
+  "description": "GitHub Copilot CLI canvas: live preview, WCAG contrast checker, and linter for DESIGN.md design-system files.",
+  "main": "extension.mjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cmaneu/designmd-canvas.git"
+  },
+  "keywords": [
+    "copilot",
+    "copilot-cli",
+    "canvas",
+    "design.md",
+    "design-system",
+    "wcag",
+    "linter"
+  ],
+  "author": "cmaneu",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@google/design.md": "^0.3.0"
+  }
+}
